@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NPD UX Audit</title>
+<style>
+  :root{--ink:#1a2b3c;--muted:#5a6b7a;--line:#dfe4ea;--bg:#f6f8fa;--card:#fff;--accent:#1f3a5f;--green:#2e8540;--greenbg:#e6f4ea;--amber:#8a5a00;--amberbg:#fdf3e0;--greybg:#f2f2f2;--greyink:#262626}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 72px}
+  header.top{background:var(--accent);color:#fff;padding:22px 0;margin-bottom:0}
+  header.top .wrap{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  header.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
+  header.top .sub{color:#cdd8e6;font-size:13px;max-width:620px}
+  .meta{color:#cdd8e6;font-size:12px;white-space:nowrap}
+  main{background:var(--card);border:1px solid var(--line);border-top:none;padding:28px 30px;border-radius:0 0 8px 8px}
+  h2{font-size:18px;margin:30px 0 10px;font-weight:700}
+  h2:first-of-type{margin-top:8px}
+  p.lede{color:var(--muted);margin:4px 0 0}
+  .banner{background:#eef3f8;border:1px solid #d4e0ee;border-radius:6px;padding:10px 14px;font-size:13px;color:#33475b;margin:16px 0 0}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:middle}
+  th{background:var(--bg);font-weight:700}
+  td.right,th.right{text-align:right}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .pill-ok{background:var(--greenbg);color:var(--green)}
+  .pill-warn{background:var(--amberbg);color:var(--amber)}
+  .pill-pending{background:var(--greybg);color:var(--greyink)}
+  .mx-score .pill{font-size:11px}
+  .groupby{display:inline-flex;align-items:center;gap:4px}
+  .groupby .lbl{color:var(--muted);font-size:12px;margin-right:4px}
+  .gb-btn{font:inherit;font-size:12px;font-weight:600;padding:4px 12px;border:1px solid var(--line);background:#fff;color:#44586b;cursor:pointer;border-radius:999px}
+  .gb-btn+.gb-btn{margin-left:2px}
+  .gb-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .gb-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .matrix-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  a.persona-link{display:inline-flex;align-items:center;gap:7px;color:inherit;text-decoration:none;font-weight:600}
+  a.persona-link:hover .persona-name,a.persona-link:focus-visible .persona-name{text-decoration:underline}
+  a.persona-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  img.persona-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;background:#e8edf2;flex:0 0 auto}
+  span.persona-avatar{width:26px;height:26px;border-radius:50%;background:#e8edf2;display:inline-block;flex:0 0 auto}
+  .persona-sub{color:var(--muted);font-weight:400}
+  a.runlink{color:var(--accent);font-weight:600;text-decoration:none}
+  a.runlink:hover{text-decoration:underline}
+  .note{font-size:12.5px;color:var(--muted)}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  footer a{color:var(--accent)}
+  ol.produces li{margin:3px 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div>
+      <h1>NPD UX Audit</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="meta" id="updated"></div>
+  </div>
+</header>
+<div class="wrap">
+<main>
+  <div class="banner" id="banner"></div>
+
+  <div class="matrix-head">
+    <h2>Audit coverage matrix</h2>
+    <div class="groupby" role="group" aria-label="Group audit matrix by">
+      <span class="lbl">Group by:</span>
+      <button type="button" class="gb-btn active" data-group="journey" aria-pressed="true">Journey</button>
+      <button type="button" class="gb-btn" data-group="lens" aria-pressed="false">Lens</button>
+    </div>
+  </div>
+  <p class="note" id="matrix-note"></p>
+  <div id="matrix"></div>
+
+  <h2>Recent runs</h2>
+  <div id="runs"></div>
+
+  <h2>What an audit produces</h2>
+  <ol class="produces">
+    <li><strong>Diffs</strong> - where the audited surface differs from the standard.</li>
+    <li><strong>Standard supersedes</strong> - where the design standard should win.</li>
+    <li><strong>Surface is better</strong> - where the shipped build is ahead and the prototype should catch up.</li>
+    <li><strong>Already aligned</strong> - a short confirmation of what passed.</li>
+  </ol>
+
+  <footer>
+    <p>Public mirror of an internal UX audit program. Findings only; design standards are referenced by link and not reproduced here. Persona likenesses are AI-generated and illustrative. Persona links open internal reference pages that require sign-in.</p>
+    <p class="note" id="footmeta"></p>
+  </footer>
+</main>
+</div>
+<script>
+(function(){
+  var RANK={err:3,action:2,pass:1,pending:0};
+  var DATA=null;
+  function pill(s){
+    if(s==='pass')   return '<span class="pill pill-ok">pass</span>';
+    if(s==='action') return '<span class="pill pill-warn">action</span>';
+    if(s==='err')    return '<span class="pill pill-warn">fail</span>';
+    return '<span class="pill pill-pending">pending</span>';
+  }
+  function personaCell(j){
+    return j.personas.map(function(p){
+      var img=p.avatar
+        ? '<img class="persona-avatar" src="'+p.avatar+'" alt="" aria-hidden="true">'
+        : '<span class="persona-avatar" aria-hidden="true"></span>';
+      return '<a class="persona-link" href="'+p.url+'" target="_blank" rel="noopener">'+img+'<span class="persona-name">'+p.name+'</span></a>';
+    }).join('<span class="persona-sub"> &middot; </span>');
+  }
+  function ran(j){return Object.keys(j.cells).length>0;}
+  function journeyScore(j){var w='pending';DATA.lenses.forEach(function(l){var c=j.cells[l.id]||'pending';if(RANK[c]>RANK[w])w=c;});return w;}
+  function lensCoverage(id){var r=0,o=0;DATA.journeys.forEach(function(j){var c=j.cells[id];if(c){r++;if(c==='action'||c==='err')o++;}});return{r:r,o:o};}
+
+  function journeyFirst(){
+    var head='<tr><th>Journey</th><th>Primary persona</th>'
+      +DATA.lenses.map(function(l){return '<th>'+l.label+'</th>';}).join('')
+      +'<th>Journey score</th><th class="right">Last run</th></tr>';
+    var body=DATA.journeys.map(function(j){
+      var cells=DATA.lenses.map(function(l){return '<td>'+pill(ran(j)?(j.cells[l.id]||'pending'):'pending')+'</td>';}).join('');
+      var score='<td><span class="mx-score">'+pill(ran(j)?journeyScore(j):'pending')+'</span></td>';
+      var last=j.run?(j.runHref?'<a class="runlink" href="'+j.runHref+'">'+j.run+'</a>':j.run):'\u2014';
+      return '<tr><td><strong>'+j.id+'</strong> '+j.name+'</td><td>'+personaCell(j)+'</td>'+cells+score+'<td class="right">'+last+'</td></tr>';
+    }).join('');
+    return '<table><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
+  }
+  function lensFirst(){
+    var head='<tr><th>Audit lens</th>'
+      +DATA.journeys.map(function(j){return '<th>'+j.id+'</th>';}).join('')
+      +'<th>Coverage</th><th class="right">Open issues</th></tr>';
+    var body=DATA.lenses.map(function(l){
+      var cells=DATA.journeys.map(function(j){return '<td>'+pill(ran(j)?(j.cells[l.id]||'pending'):'pending')+'</td>';}).join('');
+      var c=lensCoverage(l.id);
+      return '<tr><td title="'+l.full+'"><strong>'+l.id+'</strong> '+l.full+'</td>'+cells
+        +'<td>'+c.r+' / '+DATA.journeys.length+'</td>'
+        +'<td class="right">'+(c.o?'<span class="pill pill-warn">'+c.o+'</span>':'<span class="pill pill-ok">0</span>')+'</td></tr>';
+    }).join('');
+    return '<table><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
+  }
+  var NOTE={
+    journey:'Rows are customer journeys; columns are audit lenses. A journey run grades every applicable lens in one pass; the journey score is the worst lens.',
+    lens:'Rows are audit lenses; columns are journeys. Coverage counts how many journeys a lens has run against; open issues counts action/fail cells.'
+  };
+  function draw(g){
+    document.getElementById('matrix').innerHTML = g==='lens'?lensFirst():journeyFirst();
+    document.getElementById('matrix-note').innerHTML = NOTE[g]||NOTE.journey;
+    document.querySelectorAll('.gb-btn').forEach(function(b){var on=b.getAttribute('data-group')===g;b.classList.toggle('active',on);b.setAttribute('aria-pressed',on?'true':'false');});
+    try{localStorage.setItem('npd-ux-audit-groupby',g);}catch(e){}
+  }
+  function runsTable(){
+    var rows=DATA.journeys.filter(function(j){return j.run;}).map(function(j){
+      var link=j.runHref?'<a class="runlink" href="'+j.runHref+'">'+j.id+' '+j.name+'</a>':j.id+' '+j.name;
+      return '<tr><td>'+j.run+'</td><td>'+link+'</td><td>'+personaCell(j)+'</td><td>'+pill(journeyScore(j))+'</td></tr>';
+    }).join('');
+    if(!rows) rows='<tr><td colspan="4" class="note">No runs published yet.</td></tr>';
+    return '<table><thead><tr><th>Date</th><th>Run</th><th>Persona lens</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  function init(){
+    document.getElementById('subtitle').textContent=DATA.subtitle||'';
+    document.getElementById('updated').textContent='Updated '+(DATA.updated||'');
+    document.getElementById('banner').textContent=DATA.note||'';
+    document.getElementById('footmeta').textContent='Last updated '+(DATA.updated||'')+'.';
+    document.getElementById('runs').innerHTML=runsTable();
+    var g='journey';try{g=localStorage.getItem('npd-ux-audit-groupby')||'journey';}catch(e){}
+    draw(g);
+    document.querySelectorAll('.gb-btn').forEach(function(b){b.addEventListener('click',function(){draw(b.getAttribute('data-group'));});});
+  }
+  fetch('audit-data.json').then(function(r){return r.json();}).then(function(d){DATA=d;init();})
+    .catch(function(){document.getElementById('matrix').innerHTML='<p class="note">Could not load audit-data.json.</p>';});
+})();
+</script>
+</body>
+</html>

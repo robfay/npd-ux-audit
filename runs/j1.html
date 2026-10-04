@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>J1 Verify a provider - NPD UX Audit</title>
+<style>
+  :root{--ink:#1a2b3c;--muted:#5a6b7a;--line:#dfe4ea;--bg:#f6f8fa;--card:#fff;--accent:#1f3a5f;--green:#2e8540;--greenbg:#e6f4ea;--amber:#8a5a00;--amberbg:#fdf3e0;--greybg:#f2f2f2;--greyink:#262626}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 72px}
+  header.top{background:var(--accent);color:#fff;padding:22px 0}
+  header.top .wrap{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  header.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
+  header.top .sub{color:#cdd8e6;font-size:13px}
+  .meta{color:#cdd8e6;font-size:12px;white-space:nowrap}
+  main{background:var(--card);border:1px solid var(--line);border-top:none;padding:28px 30px;border-radius:0 0 8px 8px}
+  a.back{display:inline-block;margin:0 0 4px;color:var(--accent);text-decoration:none;font-size:13px;font-weight:600}
+  a.back:hover{text-decoration:underline}
+  h2{font-size:18px;margin:28px 0 10px;font-weight:700}
+  .status-line{color:var(--muted);font-size:14px;margin:6px 0 0}
+  .pill,.lz{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .lz-green{background:var(--greenbg);color:var(--green)}
+  .lz-amber{background:var(--amberbg);color:var(--amber)}
+  .persona-tag{display:inline-flex;align-items:center;gap:7px;color:inherit;text-decoration:none;font-weight:600}
+  .persona-tag:hover .pn{text-decoration:underline}
+  .persona-tag:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  .persona-tag img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:#e8edf2}
+  ol.findings li{margin:6px 0}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--bg);font-weight:700}
+  .cardbox{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:4px;padding:10px 12px;margin:8px 0;font-size:14px;background:#fbfcfd}
+  .cardbox .tag{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
+  .evidence{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:10px 0}
+  .ev{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
+  .ev .shot{display:block;height:150px;position:relative;background:#eef2f6;border-bottom:1px solid var(--line);overflow:hidden}
+  .ev .cap{padding:8px 10px;font-size:12.5px;color:var(--muted)}
+  .ev .cap b{color:var(--ink);font-weight:700}
+  /* synthetic staging search card (no avatars) */
+  .mock{position:absolute;inset:10px;background:#fff;border:1px solid #e3e8ee;border-radius:5px;padding:9px 10px;font-size:9px;line-height:1.35;color:#33475b}
+  .mock .nm{font-weight:800;letter-spacing:.3px}
+  .mock .ln{height:5px;background:#e9eef3;border-radius:3px;margin:5px 0;width:80%}
+  .mock .ln.s{width:55%}
+  .chip{display:inline-block;padding:1px 6px;border-radius:999px;font-size:8px;font-weight:700;margin:2px 3px 0 0}
+  .c-purple{background:#f8e9fb;color:#51227b}.c-red{background:#fdf1f1;color:#9a2f2f}.c-blue{background:#edf6ff;color:#245b8f}.c-grey{background:#f2f2f2;color:#262626}
+  .c-green{background:#e6f4ea;color:#2e8540}
+  .av{width:26px;height:26px;border-radius:50%;background:#cfe0d6;display:inline-block;vertical-align:middle;margin-right:6px}
+  .row{display:flex;align-items:center}
+  .legend{font-size:11px;color:var(--muted);margin:2px 0 0;font-style:italic}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div>
+      <h1>J1 - Verify a provider</h1>
+      <div class="sub">A1 prototype vs. build diff &middot; run 2026-10-03</div>
+    </div>
+    <div class="meta">NPD UX Audit</div>
+  </div>
+</header>
+<div class="wrap">
+<main>
+  <a class="back" href="../index.html">&larr; Back to audit overview</a>
+
+  <p class="status-line"><strong>Journey:</strong> a Medicare beneficiary searches for a provider and opens the detail page to confirm the provider is legitimate. Unauthenticated on both surfaces.</p>
+  <p class="status-line">
+    <strong>Primary persona:</strong>
+    <a class="persona-tag" href="https://confluenceent.cms.gov/spaces/NAPD/pages/1409026523/Barry+Beneficiary" target="_blank" rel="noopener">
+      <img src="../assets/personas/barry-beneficiary-avatar.png" alt="" aria-hidden="true">
+      <span class="pn">Barry Beneficiary</span>
+    </a>
+    &middot; <strong>Surface:</strong> prototype + build
+    &middot; <strong>Status:</strong> <span class="lz lz-amber">Action needed</span>
+    &middot; <strong>Date:</strong> 2026-10-03
+  </p>
+
+  <h2>Headline findings</h2>
+  <ol class="findings">
+    <li><b>Avatars:</b> present in the prototype (56x56 with alt text on every result card), absent in the shipped build (none on any result card, none on the detail page). This is the biggest J1 gap and ties to tickets 356 and 359.</li>
+    <li><b>Attestation:</b> the shipped build renders attestation as a gray pill; standard NPD-PILL-002 says attestation is an avatar overlay treatment, not a pill.</li>
+    <li><b>Status badges:</b> the shipped build uses a multi-color badge system (purple, red, blue, amber); pill standard v1.2 is binary green-check / gray-x only.</li>
+    <li><b>Name casing:</b> the shipped build shows ALL-CAPS names with inconsistent order; the prototype uses title case. The content standard favors title case and one name order.</li>
+  </ol>
+
+  <h2>By lens</h2>
+  <table>
+    <thead><tr><th>Lens</th><th>Result</th><th>Key finding</th></tr></thead>
+    <tbody>
+      <tr><td>A1 prototype vs. build diff</td><td><span class="lz lz-amber">Action</span></td><td>Avatar, attestation, badge-color, and casing diffs</td></tr>
+      <tr><td>A2/A3 accessibility and contrast</td><td><span class="lz lz-green">Pass</span></td><td>Muted badge contrast passes AA; prototype avatars carry alt text</td></tr>
+      <tr><td>A6 design-system and visual</td><td><span class="lz lz-amber">Action</span></td><td>Multi-color badges violate v1.2; verified green is off-token</td></tr>
+      <tr><td>A7 content, voice, terminology</td><td><span class="lz lz-amber">Action</span></td><td>ALL-CAPS names; inconsistent name order</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Draft Jira stories</h2>
+  <p class="status-line">I review and approve each of these before any ticket is filed.</p>
+  <div class="cardbox"><span class="tag">Draft</span>Replace the multi-color result badge system with the binary pill standard (v1.2): green-check for an affirmative state, gray-x for a no / not-started state; no purple, red, blue, or amber status pills.</div>
+  <div class="cardbox"><span class="tag">Draft</span>Convert the attestation pill to the avatar attestation treatment (NPD-PILL-002): a verified-style overlay on the avatar, including placeholder avatars. Depends on avatars existing (ties to 356 / 359).</div>
+  <div class="cardbox"><span class="tag">Draft</span>Normalize provider-name casing to title case and a single, documented name order across the result card and the detail header.</div>
+
+  <h2>Evidence</h2>
+  <p class="legend">Illustrations below are schematic re-creations of each screen, drawn to show layout and status-indicator treatment. They are not screenshots of any live system or real provider record.</p>
+  <div class="evidence">
+    <div class="ev">
+      <span class="shot"><span class="mock">
+        <div class="nm">SAMPLE, PAT</div><div class="ln"></div><div class="ln s"></div>
+        <div style="margin-top:6px"><span class="chip c-grey">x no photo</span></div>
+        <div class="nm" style="margin-top:9px">EXAMPLE, LEE</div><div class="ln"></div><div class="ln s"></div>
+      </span></span>
+      <div class="cap"><b>Shipped build - search results.</b> Text-only cards, ALL-CAPS last-first names, no avatars.</div>
+    </div>
+    <div class="ev">
+      <span class="shot"><span class="mock">
+        <div class="nm">PAT SAMPLE</div><div class="ln"></div>
+        <div style="margin-top:8px">
+          <span class="chip c-grey">x NPD attestation incomplete</span>
+          <span class="chip c-purple">FHIR</span>
+          <span class="chip c-red">not accepting</span>
+          <span class="chip c-blue">network</span>
+        </div>
+      </span></span>
+      <div class="cap"><b>Shipped build - provider detail.</b> Gray attestation pill plus purple / red / blue badges that conflict with v1.2.</div>
+    </div>
+    <div class="ev">
+      <span class="shot"><span class="mock">
+        <div class="row"><span class="av"></span><span class="nm" style="letter-spacing:0">Owen Organizer, MD</span></div>
+        <div class="ln" style="margin-left:32px"></div>
+        <div style="margin-top:6px"><span class="chip c-green">&#10003; verified</span></div>
+        <div class="row" style="margin-top:9px"><span class="av"></span><span class="nm" style="letter-spacing:0">Pat Sample, NP</span></div>
+      </span></span>
+      <div class="cap"><b>Prototype - search results.</b> Avatars with alt text, title-case names, binary green pill.</div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Public mirror of an internal UX audit program. Findings only; design standards are referenced by link and not reproduced here. Evidence illustrations are schematic re-creations, not screenshots of any live system or real provider record. Persona likenesses are AI-generated and illustrative; persona links open internal reference pages that require sign-in.</p>
+  </footer>
+</main>
+</div>
+</body>
+</html>
