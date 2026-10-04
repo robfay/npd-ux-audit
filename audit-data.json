@@ -1,32 +1,176 @@
 {
   "title": "NPD UX Audit",
   "subtitle": "Automated UX audits grading the NPD prototype against the shipped build, organized by customer journey.",
-  "updated": "2026-10-03",
+  "updated": "2026-10-04",
   "note": "Public mirror. Findings only; standards are linked, not reproduced. Personas are illustrative, AI-generated likenesses.",
+  "verdicts": {
+    "pass": {
+      "label": "Pass",
+      "def": "Meets the standard, or the difference between prototype and build is acceptable. No action needed."
+    },
+    "fail": {
+      "label": "Fail",
+      "def": "Measured against a documented standard and falls short (accessibility, a violated pattern, a broken flow). Needs remediation; fix in build or mockup."
+    },
+    "review": {
+      "label": "Review",
+      "def": "The prototype and build differ, but no standard yet says they must align. A design decision, not a defect."
+    },
+    "pending": {
+      "label": "Pending",
+      "def": "This lens has not been run for this journey yet."
+    }
+  },
   "lenses": [
-    {"id": "A1",  "label": "A1 diff",       "full": "Prototype vs. build diff"},
-    {"id": "A23", "label": "A2/A3 a11y",    "full": "Accessibility and contrast"},
-    {"id": "A6",  "label": "A6 design-sys", "full": "Design-system and visual conformance"},
-    {"id": "A7",  "label": "A7 content",    "full": "Content, voice, and terminology"}
+    {
+      "id": "A1",
+      "label": "A1 diff",
+      "full": "Prototype vs. build diff",
+      "enabled": true
+    },
+    {
+      "id": "A23",
+      "label": "A2/A3 a11y",
+      "full": "Accessibility and contrast",
+      "enabled": true
+    },
+    {
+      "id": "A6",
+      "label": "A6 design-sys",
+      "full": "Design-system and visual conformance",
+      "enabled": true
+    },
+    {
+      "id": "A7",
+      "label": "A7 content",
+      "full": "Content, voice, and terminology",
+      "enabled": true
+    }
   ],
   "journeys": [
-    {"id": "J1", "name": "Verify a provider", "run": "2026-10-03", "runHref": "runs/j1.html",
-     "personas": [{"name": "Barry Beneficiary", "avatar": "assets/personas/barry-beneficiary-avatar.png", "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026523/Barry+Beneficiary"}],
-     "cells": {"A1": "action", "A23": "pass", "A6": "action", "A7": "action"}},
-    {"id": "J2", "name": "Own and attest my record", "run": null, "runHref": null,
-     "personas": [{"name": "Paula Practitioner", "avatar": "assets/personas/paula-practitioner-avatar.png", "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026165/Paula+Practitioner"}],
-     "cells": {}},
-    {"id": "J3", "name": "Administer the organization", "run": null, "runHref": null,
-     "personas": [{"name": "Oliver Official", "avatar": "assets/personas/oliver-official-avatar.png", "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026940/Oliver+Official"}],
-     "cells": {}},
-    {"id": "J4", "name": "Delegate / act on behalf", "run": null, "runHref": null,
-     "personas": [
-       {"name": "Aaron Access-Manager", "avatar": "assets/personas/aaron-access-manager-avatar.png", "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409346668/Aaron+Access-Manager"},
-       {"name": "Susan Surrogate", "avatar": "assets/personas/susan-surrogate-avatar.png", "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409346745/Susan+Surrogate"}
-     ],
-     "cells": {}},
-    {"id": "J5", "name": "Consume the data", "run": null, "runHref": null,
-     "personas": [{"name": "Rachel Researcher", "avatar": null, "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026428/Rachel+Researcher"}],
-     "cells": {}}
-  ]
+    {
+      "id": "J1",
+      "name": "Verify a provider",
+      "run": "2026-10-03",
+      "runHref": "runs/j1.html",
+      "blurb": "A Medicare beneficiary searches for a provider and opens the detail page to confirm the provider is legitimate.",
+      "personas": [
+        {
+          "name": "Barry Beneficiary",
+          "avatar": "assets/personas/barry-beneficiary-avatar.png",
+          "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026523/Barry+Beneficiary"
+        }
+      ],
+      "cells": {
+        "A1": {
+          "v": "fail",
+          "fixIn": "build",
+          "owner": "Roshan",
+          "jira": "",
+          "why": "The build is missing avatars, shows attestation as a pill, and uses a multi-color badge set; the prototype matches the standard."
+        },
+        "A23": {
+          "v": "pass",
+          "fixIn": "",
+          "owner": "",
+          "jira": "",
+          "why": "Muted badge contrast passes WCAG AA and prototype avatars carry alt text."
+        },
+        "A6": {
+          "v": "fail",
+          "fixIn": "build",
+          "owner": "Roshan",
+          "jira": "",
+          "why": "The build's multi-color status badges violate pill standard v1.2 (binary green-check / gray-x); the verified green is off-token."
+        },
+        "A7": {
+          "v": "fail",
+          "fixIn": "build",
+          "owner": "Roshan",
+          "jira": "",
+          "why": "The build shows ALL-CAPS names with inconsistent order. One secondary item is a mockup fix: the prototype's title-case provider-type toggle label should be sentence case."
+        }
+      },
+      "enabled": true,
+      "lastRun": "2026-10-03"
+    },
+    {
+      "id": "J2",
+      "name": "Own and attest my record",
+      "run": null,
+      "runHref": null,
+      "blurb": "A practitioner claims their own record and attests that the information is correct.",
+      "personas": [
+        {
+          "name": "Paula Practitioner",
+          "avatar": "assets/personas/paula-practitioner-avatar.png",
+          "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026165/Paula+Practitioner"
+        }
+      ],
+      "cells": {},
+      "enabled": true,
+      "lastRun": null
+    },
+    {
+      "id": "J3",
+      "name": "Administer the organization",
+      "run": null,
+      "runHref": null,
+      "blurb": "An authorizing official manages an organization's record, locations, and staff.",
+      "personas": [
+        {
+          "name": "Oliver Official",
+          "avatar": "assets/personas/oliver-official-avatar.png",
+          "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026940/Oliver+Official"
+        }
+      ],
+      "cells": {},
+      "enabled": true,
+      "lastRun": null
+    },
+    {
+      "id": "J4",
+      "name": "Delegate / act on behalf",
+      "run": null,
+      "runHref": null,
+      "blurb": "An access manager delegates permissions so a surrogate can act on behalf of a provider or organization.",
+      "personas": [
+        {
+          "name": "Aaron Access-Manager",
+          "avatar": "assets/personas/aaron-access-manager-avatar.png",
+          "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409346668/Aaron+Access-Manager"
+        },
+        {
+          "name": "Susan Surrogate",
+          "avatar": "assets/personas/susan-surrogate-avatar.png",
+          "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409346745/Susan+Surrogate"
+        }
+      ],
+      "cells": {},
+      "enabled": true,
+      "lastRun": null
+    },
+    {
+      "id": "J5",
+      "name": "Consume the data",
+      "run": null,
+      "runHref": null,
+      "blurb": "A researcher queries and exports directory data through the public interface and API.",
+      "personas": [
+        {
+          "name": "Rachel Researcher",
+          "avatar": "assets/personas/rachel-researcher-avatar.png",
+          "url": "https://confluenceent.cms.gov/spaces/NAPD/pages/1409026428/Rachel+Researcher"
+        }
+      ],
+      "cells": {},
+      "enabled": true,
+      "lastRun": null
+    }
+  ],
+  "refreshedAt": "2026-10-04T00:00:00",
+  "publish": {
+    "mirrorPublishedAt": "2026-10-04T00:00:00",
+    "pending": false
+  }
 }

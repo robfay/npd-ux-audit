@@ -23,11 +23,33 @@
   th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:middle}
   th{background:var(--bg);font-weight:700}
   td.right,th.right{text-align:right}
-  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
   .pill-ok{background:var(--greenbg);color:var(--green)}
-  .pill-warn{background:var(--amberbg);color:var(--amber)}
+  .pill-fail{background:#fdecec;color:#9a2f2f}
+  .pill-review{background:var(--amberbg);color:var(--amber)}
   .pill-pending{background:var(--greybg);color:var(--greyink)}
+  .fixin{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;vertical-align:1px}
+  .fixin-build{background:#eef1f4;color:#44586b}
+  .fixin-mockup{background:#eaf0fb;color:#2d4f8f}
+  .fixin-decision{background:var(--amberbg);color:var(--amber)}
+  .lastrun{font-size:11px;color:var(--muted);white-space:nowrap}
+  .ctrl{font:inherit;font-size:11px;font-weight:600;padding:3px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:#44586b;cursor:pointer}
+  .ctrl[disabled]{opacity:.5;cursor:not-allowed}
+  tr.is-paused{opacity:.55}
+  tr.is-paused td{background:repeating-linear-gradient(45deg,transparent,transparent 7px,rgba(0,0,0,.025) 7px,rgba(0,0,0,.025) 14px)}
+  .paused-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;background:#ececec;color:#555}
+  .jira-link{font-size:11px;font-weight:700;color:#2d4f8f;text-decoration:none}
+  .jira-link:hover{text-decoration:underline}
+  .jira-none{font-size:11px;color:var(--muted)}
   .mx-score .pill{font-size:11px}
+  .has-why{cursor:help;border-bottom:1px dotted transparent}
+  td.cell-why{position:relative}
+  .jname{color:var(--muted);font-weight:400}
+  th.lenshead .jn{display:block;font-size:11px;font-weight:400;color:var(--muted);margin-top:1px;max-width:120px;line-height:1.25;white-space:normal}
+  .legend{margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+  .legend .pill{margin-right:4px}
+  .legend li{margin:4px 0;list-style:none}
+  .legend ul{padding-left:0;margin:6px 0 0}
   .groupby{display:inline-flex;align-items:center;gap:4px}
   .groupby .lbl{color:var(--muted);font-size:12px;margin-right:4px}
   .gb-btn{font:inherit;font-size:12px;font-weight:600;padding:4px 12px;border:1px solid var(--line);background:#fff;color:#44586b;cursor:pointer;border-radius:999px}
@@ -38,8 +60,8 @@
   a.persona-link{display:inline-flex;align-items:center;gap:7px;color:inherit;text-decoration:none;font-weight:600}
   a.persona-link:hover .persona-name,a.persona-link:focus-visible .persona-name{text-decoration:underline}
   a.persona-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
-  img.persona-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;background:#e8edf2;flex:0 0 auto}
-  span.persona-avatar{width:26px;height:26px;border-radius:50%;background:#e8edf2;display:inline-block;flex:0 0 auto}
+  img.persona-avatar{width:28px;height:28px;border-radius:22%;object-fit:cover;background:#e8edf2;flex:0 0 auto}
+  span.persona-avatar{width:28px;height:28px;border-radius:22%;background:#e8edf2;display:inline-block;flex:0 0 auto}
   .persona-sub{color:var(--muted);font-weight:400}
   a.runlink{color:var(--accent);font-weight:600;text-decoration:none}
   a.runlink:hover{text-decoration:underline}
@@ -73,6 +95,7 @@
   </div>
   <p class="note" id="matrix-note"></p>
   <div id="matrix"></div>
+  <div id="legend" class="legend"></div>
 
   <h2>Recent runs</h2>
   <div id="runs"></div>
@@ -93,72 +116,114 @@
 </div>
 <script>
 (function(){
-  var RANK={err:3,action:2,pass:1,pending:0};
-  var DATA=null;
-  function pill(s){
-    if(s==='pass')   return '<span class="pill pill-ok">pass</span>';
-    if(s==='action') return '<span class="pill pill-warn">action</span>';
-    if(s==='err')    return '<span class="pill pill-warn">fail</span>';
-    return '<span class="pill pill-pending">pending</span>';
+  // Mirror is a public, read-only surface (GitHub Pages, no backend).
+  // On-demand refresh is shown disabled with an explainer; the enable/disable
+  // toggle is internal-only, so here a disabled audit just renders as "Paused".
+  var RANK={'fail':3,'review':2,'pass':1,'pending':0};
+  var CLS={'pass':'pill-ok','fail':'pill-fail','review':'pill-review','pending':'pill-pending'};
+  var DATA=null, V=null;
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function cv(cell){ if(cell==null) return null; return (typeof cell==='object')?cell.v:cell; }
+  function cwhy(cell){ return (cell && typeof cell==='object' && cell.why)?cell.why:''; }
+  function cfix(cell){ return (cell && typeof cell==='object' && cell.fixIn)?cell.fixIn:''; }
+  function cowner(cell){ return (cell && typeof cell==='object' && cell.owner)?cell.owner:''; }
+  function cjira(cell){ return (cell && typeof cell==='object' && cell.jira)?cell.jira:''; }
+  function vlabel(v){ return (V[v]&&V[v].label)||v; }
+  function vdef(v){ return (V[v]&&V[v].def)||''; }
+  var FIXLABEL={build:'Fix in build',mockup:'Fix in mockup',decision:'Needs decision'};
+  function fixinTag(fixIn){
+    if(!fixIn) return '';
+    var cls='fixin-'+(fixIn==='mockup'?'mockup':(fixIn==='decision'?'decision':'build'));
+    return '<span class="fixin '+cls+'" title="'+esc(FIXLABEL[fixIn]||fixIn)+'">'+esc(fixIn)+'</span>';
+  }
+  function pill(cell, fallbackWhy){
+    var v=cv(cell)||'pending';
+    var why=cwhy(cell)||fallbackWhy||'';
+    var tip=vdef(v);
+    if(why) tip+=(tip?'  '+String.fromCharCode(8212)+'  ':'')+why;
+    var owner=cowner(cell); if(owner) tip+='  (owner: '+owner+')';
+    var cls=CLS[v]||'pill-pending';
+    var attr=tip?(' class="pill '+cls+' has-why" title="'+esc(tip)+'"'):(' class="pill '+cls+'"');
+    var out='<span'+attr+'>'+esc(vlabel(v))+'</span>';
+    if(v==='fail') out+=fixinTag(cfix(cell));
+    else if(v==='review') out+=fixinTag('decision');
+    return out;
   }
   function personaCell(j){
     return j.personas.map(function(p){
       var img=p.avatar
         ? '<img class="persona-avatar" src="'+p.avatar+'" alt="" aria-hidden="true">'
         : '<span class="persona-avatar" aria-hidden="true"></span>';
-      return '<a class="persona-link" href="'+p.url+'" target="_blank" rel="noopener">'+img+'<span class="persona-name">'+p.name+'</span></a>';
+      return '<a class="persona-link" href="'+p.url+'" target="_blank" rel="noopener" title="Opens the '+esc(p.name)+' reference page in Confluence (sign-in required)">'+img+'<span class="persona-name">'+esc(p.name)+'</span></a>';
     }).join('<span class="persona-sub"> &middot; </span>');
   }
   function ran(j){return Object.keys(j.cells).length>0;}
-  function journeyScore(j){var w='pending';DATA.lenses.forEach(function(l){var c=j.cells[l.id]||'pending';if(RANK[c]>RANK[w])w=c;});return w;}
-  function lensCoverage(id){var r=0,o=0;DATA.journeys.forEach(function(j){var c=j.cells[id];if(c){r++;if(c==='action'||c==='err')o++;}});return{r:r,o:o};}
+  function enabled(j){return j.enabled!==false;}
+  function journeyScore(j){var w='pending';DATA.lenses.forEach(function(l){var c=cv(j.cells[l.id])||'pending';if(RANK[c]>RANK[w])w=c;});return w;}
+  function lensCoverage(id){var r=0,o=0;DATA.journeys.forEach(function(j){var c=cv(j.cells[id]);if(c){r++;if(c==='fail'||c==='review')o++;}});return{r:r,o:o};}
+  function lastRunLabel(j){
+    if(!enabled(j)) return '<span class="paused-tag" title="This audit is turned off to save resources">Paused</span>';
+    if(j.run) return j.runHref?'<a class="runlink" href="'+j.runHref+'">'+esc(j.run)+' &rsaquo;</a>':'<span class="lastrun">'+esc(j.run)+'</span>';
+    return '<span class="lastrun">Not run yet</span>';
+  }
+  // Public mirror is read-only: no on-demand refresh control. A "Last refreshed"
+  // stamp in the header reflects the last internal-dashboard run that published here.
 
   function journeyFirst(){
     var head='<tr><th>Journey</th><th>Primary persona</th>'
-      +DATA.lenses.map(function(l){return '<th>'+l.label+'</th>';}).join('')
+      +DATA.lenses.map(function(l){return '<th title="'+esc(l.full)+'">'+esc(l.label)+'</th>';}).join('')
       +'<th>Journey score</th><th class="right">Last run</th></tr>';
     var body=DATA.journeys.map(function(j){
-      var cells=DATA.lenses.map(function(l){return '<td>'+pill(ran(j)?(j.cells[l.id]||'pending'):'pending')+'</td>';}).join('');
-      var score='<td><span class="mx-score">'+pill(ran(j)?journeyScore(j):'pending')+'</span></td>';
-      var last=j.run?(j.runHref?'<a class="runlink" href="'+j.runHref+'">'+j.run+'</a>':j.run):'\u2014';
-      return '<tr><td><strong>'+j.id+'</strong> '+j.name+'</td><td>'+personaCell(j)+'</td>'+cells+score+'<td class="right">'+last+'</td></tr>';
+      var cells=DATA.lenses.map(function(l){var c=j.cells[l.id];return '<td class="cell-why">'+pill(ran(j)?(c||'pending'):'pending', 'This lens has not been run for this journey yet.')+'</td>';}).join('');
+      var score='<td><span class="mx-score">'+pill(ran(j)?journeyScore(j):'pending','')+'</span></td>';
+      var cls=enabled(j)?'':' class="is-paused"';
+      return '<tr'+cls+'><td><strong>'+esc(j.id)+'</strong> '+esc(j.name)+'</td><td>'+personaCell(j)+'</td>'+cells+score+'<td class="right">'+lastRunLabel(j)+'</td></tr>';
     }).join('');
     return '<table><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
   }
   function lensFirst(){
     var head='<tr><th>Audit lens</th>'
-      +DATA.journeys.map(function(j){return '<th>'+j.id+'</th>';}).join('')
+      +DATA.journeys.map(function(j){return '<th class="lenshead" title="'+esc(j.blurb||j.name)+'"><strong>'+esc(j.id)+'</strong><span class="jn">'+esc(j.name)+'</span></th>';}).join('')
       +'<th>Coverage</th><th class="right">Open issues</th></tr>';
     var body=DATA.lenses.map(function(l){
-      var cells=DATA.journeys.map(function(j){return '<td>'+pill(ran(j)?(j.cells[l.id]||'pending'):'pending')+'</td>';}).join('');
+      var cells=DATA.journeys.map(function(j){var c=j.cells[l.id];return '<td class="cell-why">'+pill(ran(j)?(c||'pending'):'pending', 'This lens has not been run for this journey yet.')+'</td>';}).join('');
       var c=lensCoverage(l.id);
-      return '<tr><td title="'+l.full+'"><strong>'+l.id+'</strong> '+l.full+'</td>'+cells
+      return '<tr><td title="'+esc(l.full)+'"><strong>'+esc(l.id)+'</strong> '+esc(l.full)+'</td>'+cells
         +'<td>'+c.r+' / '+DATA.journeys.length+'</td>'
-        +'<td class="right">'+(c.o?'<span class="pill pill-warn">'+c.o+'</span>':'<span class="pill pill-ok">0</span>')+'</td></tr>';
+        +'<td class="right">'+(c.o?'<span class="pill pill-fail">'+c.o+'</span>':'<span class="pill pill-ok">0</span>')+'</td></tr>';
     }).join('');
     return '<table><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
   }
+  function legend(){
+    var order=['pass','fail','review','pending'];
+    var items=order.filter(function(k){return V[k];}).map(function(k){
+      return '<li>'+pill(k,'')+' '+esc(vdef(k))+'</li>';
+    }).join('');
+    return '<strong>What the status means</strong><ul>'+items+'</ul>'
+      +'<p class="note" style="margin:8px 0 0">Hover any status for the specific reason. A <strong>Fail</strong> carries a <em>fix in build</em> or <em>fix in mockup</em> tag so the direction of the fix is explicit; a <strong>Review</strong> is a difference that still needs a design decision.</p>';
+  }
   var NOTE={
-    journey:'Rows are customer journeys; columns are audit lenses. A journey run grades every applicable lens in one pass; the journey score is the worst lens.',
-    lens:'Rows are audit lenses; columns are journeys. Coverage counts how many journeys a lens has run against; open issues counts action/fail cells.'
+    journey:'Rows are customer journeys; columns are audit lenses. A journey run grades every applicable lens in one pass; the journey score is the worst lens. Open a run to see why each lens got its status. Refresh is read-only here; on-demand runs live in the internal dashboard.',
+    lens:'Rows are audit lenses; columns are journeys (hover a journey heading for its description). Coverage counts how many journeys a lens has run against; open issues counts cells needing a fix or a decision.'
   };
   function draw(g){
     document.getElementById('matrix').innerHTML = g==='lens'?lensFirst():journeyFirst();
     document.getElementById('matrix-note').innerHTML = NOTE[g]||NOTE.journey;
+    document.getElementById('legend').innerHTML = legend();
     document.querySelectorAll('.gb-btn').forEach(function(b){var on=b.getAttribute('data-group')===g;b.classList.toggle('active',on);b.setAttribute('aria-pressed',on?'true':'false');});
     try{localStorage.setItem('npd-ux-audit-groupby',g);}catch(e){}
   }
   function runsTable(){
     var rows=DATA.journeys.filter(function(j){return j.run;}).map(function(j){
-      var link=j.runHref?'<a class="runlink" href="'+j.runHref+'">'+j.id+' '+j.name+'</a>':j.id+' '+j.name;
-      return '<tr><td>'+j.run+'</td><td>'+link+'</td><td>'+personaCell(j)+'</td><td>'+pill(journeyScore(j))+'</td></tr>';
+      var link=j.runHref?'<a class="runlink" href="'+j.runHref+'">'+esc(j.id)+' '+esc(j.name)+' &rsaquo;</a>':esc(j.id)+' '+esc(j.name);
+      return '<tr><td>'+esc(j.run)+'</td><td>'+link+'</td><td>'+personaCell(j)+'</td><td>'+pill(journeyScore(j),'')+'</td></tr>';
     }).join('');
     if(!rows) rows='<tr><td colspan="4" class="note">No runs published yet.</td></tr>';
-    return '<table><thead><tr><th>Date</th><th>Run</th><th>Persona lens</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    return '<table><thead><tr><th>Date</th><th>Run</th><th>Persona lens</th><th>Journey score</th></tr></thead><tbody>'+rows+'</tbody></table>';
   }
   function init(){
     document.getElementById('subtitle').textContent=DATA.subtitle||'';
-    document.getElementById('updated').textContent='Updated '+(DATA.updated||'');
+    (function(){var u=document.getElementById('updated');var ref=(DATA.refreshedAt||'').replace('T',' ');u.textContent='Updated '+(DATA.updated||'')+(ref?'  \u00b7  Last refreshed '+ref:'');})();
     document.getElementById('banner').textContent=DATA.note||'';
     document.getElementById('footmeta').textContent='Last updated '+(DATA.updated||'')+'.';
     document.getElementById('runs').innerHTML=runsTable();
@@ -166,7 +231,7 @@
     draw(g);
     document.querySelectorAll('.gb-btn').forEach(function(b){b.addEventListener('click',function(){draw(b.getAttribute('data-group'));});});
   }
-  fetch('audit-data.json').then(function(r){return r.json();}).then(function(d){DATA=d;init();})
+  fetch('audit-data.json').then(function(r){return r.json();}).then(function(d){DATA=d;V=d.verdicts||{};init();})
     .catch(function(){document.getElementById('matrix').innerHTML='<p class="note">Could not load audit-data.json.</p>';});
 })();
 </script>
